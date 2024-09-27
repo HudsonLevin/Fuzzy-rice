@@ -1,0 +1,44 @@
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+import matplotlib.pyplot as plt
+
+# กำหนด input variables
+rice_amount = ctrl.Antecedent(np.arange(0, 101, 1), 'rice_amount')
+water_level = ctrl.Antecedent(np.arange(0, 101, 1), 'water_level')
+pot_temperature = ctrl.Antecedent(np.arange(0, 101, 1), 'pot_temperature')
+
+# กำหนด output variable
+scooping_amount = ctrl.Consequent(np.arange(0, 101, 1), 'scooping_amount')
+
+# กำหนด membership functions
+rice_amount.automf(3)
+water_level.automf(3)
+pot_temperature.automf(3)
+scooping_amount['low'] = fuzz.trimf(scooping_amount.universe, [0, 0, 50])
+scooping_amount['medium'] = fuzz.trimf(scooping_amount.universe, [0, 50, 100])
+scooping_amount['high'] = fuzz.trimf(scooping_amount.universe, [50, 100, 100])
+
+# กำหนด rules
+rule1 = ctrl.Rule(rice_amount['poor'] & water_level['poor'] & pot_temperature['poor'], scooping_amount['low'])
+rule2 = ctrl.Rule(rice_amount['average'] & water_level['average'] & pot_temperature['average'], scooping_amount['medium'])
+rule3 = ctrl.Rule(rice_amount['good'] & water_level['good'] & pot_temperature['good'], scooping_amount['high'])
+
+# สร้าง control system
+scooping_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
+scooping = ctrl.ControlSystemSimulation(scooping_ctrl)
+
+# กำหนด input
+scooping.input['rice_amount'] = 70
+scooping.input['water_level'] = 50
+scooping.input['pot_temperature'] = 80
+
+# คำนวณ
+scooping.compute()
+
+# แสดงผลลัพธ์
+print(f"ปริมาณการตักข้าว: {scooping.output['scooping_amount']:.2f}")
+
+# พล็อตกราฟ
+scooping_amount.view(sim=scooping)
+plt.show()
